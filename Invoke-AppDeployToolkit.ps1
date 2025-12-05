@@ -206,8 +206,17 @@ function Uninstall-ADTDeployment
 
     Unregister-ScheduledTask -TaskName "Change System Language"
     Remove-ADTFile -LiteralPath "C:\Program Files\LanguageChange\Invoke-ChangeDefaultLanguage.ps1"
-    Remove-ADTRegistryKey -Path "HKEY_LOCAL_MACHINE\SOFTWARE\LanguageChange" -Name 'LangChangeRestartPending'
 
+    $regPath = 'HKLM:\SOFTWARE\LanguageChange'
+    if (-not (Test-Path $regPath)) {
+        Write-Host "Registry path $regPath not found."
+    } else {
+        $props = (Get-ItemProperty -Path $regPath).PSObject.Properties | Where-Object { $_.Name -like 'LangChangeRestartPending*' }
+        foreach ($prop in $props) {
+        Remove-ADTRegistryKey -Path "HKEY_LOCAL_MACHINE\SOFTWARE\LanguageChange" -Name $prop.Name -ErrorAction SilentlyContinue
+        }
+    }
+    
     ##================================================
     ## MARK: Post-Uninstallation
     ##================================================
@@ -252,8 +261,15 @@ function Repair-ADTDeployment
 
     Unregister-ScheduledTask -TaskName "Change System Language" -Confirm:$false
     Remove-ADTFile -LiteralPath "C:\Program Files\LanguageChange\Invoke-ChangeDefaultLanguage.ps1" -ErrorAction SilentlyContinue
-    Remove-ADTRegistryKey -Path "HKEY_LOCAL_MACHINE\SOFTWARE\LanguageChange" -Name 'LangChangeRestartPending' -ErrorAction SilentlyContinue
-
+    $regPath = 'HKLM:\SOFTWARE\LanguageChange'
+    if (-not (Test-Path $regPath)) {
+        Write-Host "Registry path $regPath not found."
+    } else {
+        $props = (Get-ItemProperty -Path $regPath).PSObject.Properties | Where-Object { $_.Name -like 'LangChangeRestartPending*' }
+        foreach ($prop in $props) {
+        Remove-ADTRegistryKey -Path "HKEY_LOCAL_MACHINE\SOFTWARE\LanguageChange" -Name $prop.Name -ErrorAction SilentlyContinue
+        }
+    }
     if (Test-Path -Path "C:\Program Files\LanguageChange\") {
         Copy-ADTFile -Path "$($adtSession.DirFiles)\Invoke-ChangeDefaultLanguage.ps1" -Destination "C:\Program Files\LanguageChange\Invoke-ChangeDefaultLanguage.ps1"
     } else {
